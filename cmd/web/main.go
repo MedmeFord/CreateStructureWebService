@@ -18,7 +18,7 @@ type application struct {
 func main() {
 	addr := flag.String("addr", ":4000", "Сетевой адрес HTTP")
 
-	dsn := flag.String("dsn", "web:pass@/snippetbox?parseTime=true", "Название Postgresql источника данных")
+	dsn := flag.String("dsn", "postgresql://web:q@127.0.0.1:5432/snippetbox?sslmode=disable", "Название postSQL источника данных")
 	flag.Parse()
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.LUTC|log.Ltime)
@@ -28,6 +28,7 @@ func main() {
 	if err != nil {
 		errorLog.Fatal(err)
 	}
+
 	defer db.Close()
 
 	app := &application{
@@ -38,7 +39,7 @@ func main() {
 	srv := &http.Server{
 		Addr:     *addr,
 		ErrorLog: errorLog,
-		Handler:  app.routes(),
+		Handler:  app.routes(), // создает маршрутизатор и
 	}
 
 	infoLog.Printf("Запуск сервера на %s", *addr)
@@ -47,7 +48,8 @@ func main() {
 }
 
 func OpenDB(dsn string) (*sql.DB, error) {
-	db, err := sql.Open("pq", dsn)
+	db, err := sql.Open("postgres", dsn)
+
 	if err != nil {
 		return nil, err
 	}
