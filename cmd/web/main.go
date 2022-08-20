@@ -3,16 +3,17 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"github.com/MedmeFord/CreateStructureWebService/pkg/models/postgresql"
+	_ "github.com/lib/pq"
 	"log"
 	"net/http"
 	"os"
-
-	_ "github.com/lib/pq"
 )
 
 type application struct {
 	errorLog *log.Logger
 	infoLog  *log.Logger
+	snippets *postgresql.SnippetModel
 }
 
 func main() {
@@ -34,6 +35,7 @@ func main() {
 	app := &application{
 		errorLog: errorLog,
 		infoLog:  infoLog,
+		snippets: &postgresql.SnippetModel{DB: db},
 	}
 
 	srv := &http.Server{
@@ -47,6 +49,8 @@ func main() {
 	errorLog.Fatal(err)
 }
 
+// Функция openDB() обертывает sql.Open() и возвращает пул соединений sql.DB
+// для заданной строки подключения (DSN).
 func OpenDB(dsn string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", dsn)
 
