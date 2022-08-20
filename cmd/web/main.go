@@ -1,10 +1,13 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"log"
 	"net/http"
 	"os"
+
+	_ "github.com/lib/pq"
 )
 
 type application struct {
@@ -14,10 +17,18 @@ type application struct {
 
 func main() {
 	addr := flag.String("addr", ":4000", "Сетевой адрес HTTP")
+
+	dsn := flag.String("dsn", "web:pass@/snippetbox?parseTime=true", "Название Postgresql источника данных")
 	flag.Parse()
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.LUTC|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.LUTC|log.Ltime|log.Llongfile)
+
+	db, err := OpenDB(*dsn)
+	if err != nil {
+		errorLog.Fatal(err)
+	}
+	defer db.Close()
 
 	app := &application{
 		errorLog: errorLog,
@@ -29,9 +40,21 @@ func main() {
 		ErrorLog: errorLog,
 		Handler:  app.routes(),
 	}
+
 	infoLog.Printf("Запуск сервера на %s", *addr)
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	errorLog.Fatal(err)
+}
+
+func OpenDB(dsn string) (*sql.DB, error) {
+	db, err := sql.Open("pq", dsn)
+	if err != nil {
+		return nil, err
+	}
+	if err = db.Ping(); err != nil {
+		return nil, err
+	}
+	return db, nil
 }
 
 // type neuteredFileSystem struct {
@@ -45,15 +68,4 @@ func main() {
 // 	}
 //
 // 	s, err := f.Stat()
-// 	if s.IsDir() {
-// 		index := filepath.Join(path, "index.html")
-// 		if _, err := nfs.fs.Open(index); err != nil {
-// 			closeErr := f.Close()
-// 			if closeErr != nil {
-// 				return nil, closeErr
-// 			}
-// 			return nil, err
-// 		}
-// 	}
-// 	return f, nil
-// }
+//
