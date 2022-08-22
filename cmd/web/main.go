@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 type application struct {
@@ -17,47 +18,68 @@ type application struct {
 }
 
 func main() {
-	addr := flag.String("addr", ":4000", "Сетевой адрес HTTP")
+	addr := flag.String("addr", "127.0.0.1:4000", "Сетевоой адресс HTTP") // флаг командной строки
 
-	dsn := flag.String("dsn", "postgresql://web:q@127.0.0.1:5432/snipetbox?sslmode=disable", "Название postSQL источника данных")
-	flag.Parse()
+	// очень жестко(pg_hba.conf + нужно правильно прописать адрес
+	dsn := flag.String("dsn", "postgresql://web:123@127.0.0.1:5432/snipetbox?sslmode=disable", "Название postSQL источника данных")
 
-	infoLog := log.New(os.Stdout, "INFO\t", log.LUTC|log.Ltime)
-	errorLog := log.New(os.Stderr, "ERROR\t", log.LUTC|log.Ltime|log.Llongfile)
+	flag.Parse()                                                                  // извлечение флага из командной строки(меняет по адресу addr)
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)                  // создание логгера INFO в stdout
+	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile) // логгер ошибок ERROR
 
-	db, err := OpenDB(*dsn)
+	db, err := openDB(*dsn) // инициализируем пул подключений к базе
 	if err != nil {
 		errorLog.Fatal(err)
 	}
-
 	defer db.Close()
 
 	app := &application{
-		errorLog: errorLog,
-		infoLog:  infoLog,
+		errorLog: infoLog,
+		infoLog:  errorLog,
 		snippets: &postgresql.SnippetModel{DB: db},
 	}
 
 	srv := &http.Server{
 		Addr:     *addr,
 		ErrorLog: errorLog,
-		Handler:  app.routes(), // создает маршрутизатор и
+		Handler:  app.routes(), // создает маршрутизатор и тп для декомпозиции
 	}
-
-	infoLog.Printf("Запуск сервера на %s", *addr)
-	err = srv.ListenAndServe()
+	infoLog.Printf("Запуск веб-сервера на http://%s", *addr)
+	err = srv.ListenAndServe() // Запуск нового веб-сервера
 	errorLog.Fatal(err)
+}
+
+type neuterdFileSystem struct {
+	fs http.FileSystem
+}
+
+func (new_fs neuterdFileSystem) Open(path string) (http.File, error) {
+	f, err := new_fs.fs.Open(path) // открываем вызываемый путь
+	if err != nil {
+		return nil, err
+	}
+	s, err := f.Stat() // os.File предоставляет доступ к информации о файле/пути os.FileInfo
+	if s.IsDir() {
+		index := filepath.Join(path, "index.html")
+		if _, err := new_fs.fs.Open(index); err != nil {
+			closeErr := f.Close()
+			if closeErr != nil {
+				return nil, closeErr
+			}
+			return nil, err
+		}
+	}
+	return f, nil
 }
 
 // Функция openDB() обертывает sql.Open() и возвращает пул соединений sql.DB
 // для заданной строки подключения (DSN).
-func OpenDB(dsn string) (*sql.DB, error) {
+func openDB(dsn string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", dsn)
-
 	if err != nil {
 		return nil, err
 	}
-	if err = db.Ping(); err != nil {
+	if err = db.Ping(); err != nil { // проверка того что все настроено правильно
 		return nil, err
 	}
 	return db, nil
