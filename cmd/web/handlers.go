@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"github.com/MedmeFord/CreateStructureWebService/pkg/models"
 	"html/template"
 	"net/http"
 	"strconv"
@@ -38,7 +40,16 @@ func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Отображение выбранной заметки с ID %d...", id)
+	s, err := app.snippets.Get(id)
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
+			app.notFound(w)
+		} else {
+			app.serverError(w, err)
+		}
+		return
+	}
+	fmt.Fprintf(w, "%v", s)
 }
 
 func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) { // "/snippet/create"
@@ -51,7 +62,7 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) { 
 	// Создаем несколько переменных, содержащих тестовые данные. Мы удалим их позже.
 	title := "История про улитку"
 	content := "Улитка выползла из раковины,\nвытянула рожки,\nи опять подобрала их."
-	expires := "7"
+	expires := "1"
 
 	id, err := app.snippets.Insert(title, content, expires)
 	if err != nil {
