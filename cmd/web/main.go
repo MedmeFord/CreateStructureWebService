@@ -19,7 +19,7 @@ type application struct {
 func main() {
 	addr := flag.String("addr", ":4000", "Сетевой адрес HTTP")
 
-	dsn := flag.String("dsn", "postgresql://web:q@127.0.0.1:5432/snippetbox?sslmode=disable", "Название postSQL источника данных")
+	dsn := flag.String("dsn", "postgresql://web:q@127.0.0.1:5432/snipetbox?sslmode=disable", "Название postSQL источника данных")
 	flag.Parse()
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.LUTC|log.Ltime)
