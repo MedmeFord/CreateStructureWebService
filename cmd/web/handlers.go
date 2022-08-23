@@ -51,7 +51,7 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) { 
 	}
 
 	// Создаем несколько переменных, содержащих тестовые данные. Мы удалим их позже.
-	title := "История про улитку"
+	title := "Дед"
 	content := "Улитка выползла из раковины,\nвытянула рожки,\nи опять подобрала их."
 	expires := "7"
 

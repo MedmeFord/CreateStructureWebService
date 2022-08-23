@@ -16,7 +16,7 @@ type SnippetModel struct {
 func (m *SnippetModel) Insert(title, content, expires string) (int, error) {
 	// stmt := `INSERT INTO snippets (title, content_, created, expires)
 	// VALUES($1, $2, current_timestamp, current_timestamp + $3::interval)`
-	stmt := `INSERT INTO snippets (title, content_, created, expires)
+	stmt := `INSERT INTO snippets (title, content, created, expires)
 		VALUES($1, $2, current_timestamp, current_timestamp + interval '1 year' * $3)`
 	_, err := m.DB.Exec(stmt, title, content, expires) // много вопросов
 	if err != nil {
