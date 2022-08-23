@@ -1,4 +1,5 @@
 # CreateStructureWebService
+This progect used database Postgresql
 ![ResScren1](./screenshots/ResScreen.png)
 ![ResScren1](./screenshots/ResScreen1.png)
 ![ResScren1](./screenshots/ResScreen2.png)
